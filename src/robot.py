@@ -85,7 +85,7 @@ def server(server_name):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='server')
+    parser = argparse.ArgumentParser(description='robot server')
     parser.add_argument('server_name', type=str, help="Name of server")
     args = parser.parse_args()
     server(args.server_name)

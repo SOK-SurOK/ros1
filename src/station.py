@@ -4,11 +4,13 @@
 import rospy
 import numpy as np
 import random as rnd
+import argparse
 from cybermans_psu.srv import PositionWant, PositionWantResponse
 from cybermans_psu.srv import PositionWhere, PositionWhereResponse
 from cybermans_psu.srv import PositionAround, PositionAroundResponse
 
 robots = ['alpha', 'beta']  # имена нодов роботов
+visual = None
 
 labirint = np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
                      [1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
@@ -35,7 +37,8 @@ def handle_want(req):
     if res:
         labirint[req.x_old, req.y_old] = 0
         labirint[req.x_new, req.y_new] = 2
-        # print(labirint)
+        if visual:
+            print(labirint)
     return PositionWantResponse(res)
 
 
@@ -55,6 +58,9 @@ def handle_get_rnd_pos(req):
         x, y = rnd.randint(0, 16), rnd.randint(0, 16)
         if check_rnd_pos(labirint, x, y):
             flag = False
+        labirint[x, y] = 2
+        if visual:
+            print(labirint)
     return PositionWhereResponse(x, y)
 
 
@@ -92,13 +98,17 @@ def get_robot_position():
     for robot in robots:
         ser_list.append([rospy.ServiceProxy(robot, PositionWhere), robot])
     while not rospy.is_shutdown():
-        for pos in ser_list:
-            try:
-                resp = pos[0]()
-                rospy.loginfo("%s telemetry x=%s,y=%s", pos[1], resp.x, resp.y)
-            except rospy.ServiceException as e:
-                rospy.loginfo("Service call failed: %s" % e)
-                rospy.sleep(1)
+        if visual:
+            # print(labirint)
+            pass
+        else:
+            for pos in ser_list:
+                try:
+                    resp = pos[0]()
+                    rospy.loginfo("%s telemetry x=%s,y=%s", pos[1], resp.x, resp.y)
+                except rospy.ServiceException as e:
+                    rospy.loginfo("Service call failed: %s" % e)
+                    rospy.sleep(1)
         r.sleep()
 
 
@@ -110,4 +120,9 @@ def omega():
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='station server')
+    parser.add_argument('--visual',  type=bool,  default=False,
+                        help='True - massive output')
+    args = parser.parse_args()
+    visual = args.visual
     omega()
