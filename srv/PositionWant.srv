@@ -1,0 +1,6 @@
+int64  x_old
+int64  y_old
+int64  x_new
+int64  y_new
+---
+bool   res

@@ -1,6 +1,0 @@
-int64  xx
-int64  yy
-int64  x
-int64  y
----
-bool   res

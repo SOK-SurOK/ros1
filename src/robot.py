@@ -4,64 +4,84 @@
 import rospy
 import argparse
 import numpy as np
-import random as rnd
-from cybermans_psu.srv import Position2, Position, PositionResponse
+from cybermans_psu.srv import PositionWant
+from cybermans_psu.srv import PositionWhere, PositionWhereResponse
+from cybermans_psu.srv import PositionAround
 
 x, y = 0, 0
-pos = None
 
 
-def handle(req):
-    return PositionResponse(x, y)
+def handle_where(req):
+    return PositionWhereResponse(x, y)
 
 
-def get_rnd_pos():
-    flag = True
-    xx, yy = 0, 0
-    while flag:
-        xx, yy = rnd.randint(0, 16), rnd.randint(0, 16)
-        if pos(xx, yy, xx, yy).res:
-            flag = False
-    return xx, yy
-
-
-def change_rnd_pos():
-    way = np.random.choice(['a', 'w', 's', 'd'])
-    xx, yy = x, y
-    if way == 'a':
-        xx = x - 1
-    elif way == 'w':
-        yy = y - 1
-    elif way == 's':
-        yy = y + 1
-    elif way == 'd':
-        xx = x + 1
-
-    if pos(x, y, xx, yy).res:
-        return xx, yy
-    else:
+def change_rnd_pos(pos_want, pos_around):
+    around = pos_around(x, y)
+    if around.w != 0 and around.a != 0 and around.s != 0 and around.d != 0:
         return x, y
+    else:
+        flag = True
+        xx, yy = x, y
+        while flag:
+            way = np.random.choice(['w', 'a', 's', 'd'])
+            if way == 'w' and around.w == 0:
+                xx = x - 1
+                flag = False
+            elif way == 'a' and around.a == 0:
+                yy = y - 1
+                flag = False
+            elif way == 's' and around.s == 0:
+                xx = x + 1
+                flag = False
+            elif way == 'd' and around.d == 0:
+                yy = y + 1
+                flag = False
+        # print(xx, yy)
+
+        if pos_want(x, y, xx, yy).res:
+            return xx, yy
+        else:
+            return x, y
 
 
 def server(server_name):
     rospy.init_node(server_name)
-    rospy.loginfo("Start " + server_name)
+    rospy.loginfo("Start '" + server_name + "' node")
+    r = rospy.Rate(10)
 
-    try:
-        global pos
-        pos = rospy.ServiceProxy('labirint', Position2)
-        global x, y
-        x, y = get_rnd_pos()
+    flag = True
+    s = None
+    while flag:
+        try:
+            rospy.loginfo("Wait server 'labirint_rnd_pos'")
+            rospy.wait_for_service('labirint_rnd_pos')
+            get_rnd_pos = rospy.ServiceProxy('labirint_rnd_pos', PositionWhere)
+            global x, y
+            rnd_pos = get_rnd_pos()
+            x = rnd_pos.x
+            y = rnd_pos.y
 
-        r = rospy.Rate(10)
+            rospy.loginfo("Wait server 'labirint'")
+            rospy.wait_for_service('labirint')
+            pos_want = rospy.ServiceProxy('labirint', PositionWant)
 
-        s = rospy.Service(server_name, Position, handle)
-        while not rospy.is_shutdown():
-            x, y = change_rnd_pos()
-            rospy.loginfo("%s x=%s,y=%s", server_name, x, y)
-            r.sleep()
-    except rospy.ServiceException, e:
-        rospy.loginfo("Service call failed: %s" % e)
+            rospy.loginfo("Wait server 'labirint_around'")
+            rospy.wait_for_service('labirint_around')
+            pos_around = rospy.ServiceProxy('labirint_around', PositionAround)
+
+            if s is None:
+                s = rospy.Service(server_name, PositionWhere, handle_where)
+                rospy.loginfo("Start server '" + server_name + "'")
+
+            while not rospy.is_shutdown():
+                x, y = change_rnd_pos(pos_want, pos_around)
+                rospy.loginfo("%s x=%s,y=%s", server_name, x, y)
+                r.sleep()
+            flag = False
+        except rospy.ServiceException as e:
+            rospy.loginfo("Service call failed: %s" % e)
+            # s.shutdown('shutdown ' + server_name)
+            rospy.sleep(1)
 
 
 if __name__ == "__main__":
