@@ -75,7 +75,7 @@ def server(server_name):
 
             while not rospy.is_shutdown():
                 i, j = change_rnd_pos(pos_want, pos_around)
-                rospy.loginfo("%s x=%s,y=%s", server_name, j, i)
+                rospy.loginfo("%s x=%s,y=%s", server_name, j, 16 - i)
                 r.sleep()
             flag = False
         except rospy.ServiceException as e:

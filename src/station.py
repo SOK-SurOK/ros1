@@ -103,7 +103,7 @@ def get_robot_position():
             for pos in ser_list:
                 try:
                     resp = pos[0]()
-                    rospy.loginfo("%s telemetry x=%s,y=%s", pos[1], resp.j, resp.i)
+                    rospy.loginfo("%s telemetry x=%s,y=%s", pos[1], resp.j, 16 - resp.i)
                 except rospy.ServiceException as e:
                     rospy.loginfo("Service call failed: %s" % e)
                     rospy.sleep(1)
@@ -121,8 +121,9 @@ def omega():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='station server')
-    parser.add_argument('-v',  type=bool,  default=False,
-                        help='V = True => massive output')
+    parser.add_argument('-v',  action='store_const', const=True,
+                        help=' massive output')
     args = parser.parse_args()
     visual = args.v
+    # print(visual)
     omega()
