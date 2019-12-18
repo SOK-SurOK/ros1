@@ -32,56 +32,54 @@ labirint = np.array([[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 
 
 def handle_want(req):
-    res = check_rnd_pos(labirint, req.x_new, req.y_new)
+    res = check_rnd_pos(labirint, req.i_new, req.j_new)
     # print(res)
     if res:
-        labirint[req.x_old, req.y_old] = 0
-        labirint[req.x_new, req.y_new] = 2
+        labirint[req.i_old, req.j_old] = 0
+        labirint[req.i_new, req.j_new] = 2
         if visual:
             print(labirint)
     return PositionWantResponse(res)
 
 
 def handle_around(req):
-    w = get_pos(req.x - 1, req.y)
-    a = get_pos(req.x, req.y - 1)
-    s = get_pos(req.x + 1, req.y)
-    d = get_pos(req.x, req.y + 1)
+    w = get_pos(req.i - 1, req.j)
+    a = get_pos(req.i, req.j - 1)
+    s = get_pos(req.i + 1, req.j)
+    d = get_pos(req.i, req.j + 1)
     # print(w, a, s, d)
     return PositionAroundResponse(w, a, s, d)
 
 
 def handle_get_rnd_pos(req):
     flag = True
-    x, y = 0, 0
+    i, j = 0, 0
     while flag:
-        x, y = rnd.randint(0, 16), rnd.randint(0, 16)
-        if check_rnd_pos(labirint, x, y):
+        i, j = rnd.randint(0, 16), rnd.randint(0, 16)
+        if check_rnd_pos(labirint, i, j):
             flag = False
-        labirint[x, y] = 2
+        labirint[i, j] = 2
         if visual:
             print(labirint)
-    return PositionWhereResponse(x, y)
+    return PositionWhereResponse(i, j)
 
 
-def check_pos(x, y):
-    return 0 <= x < 17 and 0 <= y < 17
+def check_pos(i, j):
+    return 0 <= i < 17 and 0 <= j < 17
 
 
-def get_pos(x, y):
-    if check_pos(x, y):
-        return labirint[x, y]
+def get_pos(i, j):
+    if check_pos(i, j):
+        return labirint[i, j]
     else:
         return -1
 
 
-def check_rnd_pos(arr, x, y):
-    return check_pos(x, y) and arr[x, y] == 0
+def check_rnd_pos(arr, i, j):
+    return check_pos(i, j) and arr[i, j] == 0
 
 
 def init_servers():
-    print(labirint)
-
     s = rospy.Service('labirint', PositionWant, handle_want)
     rospy.loginfo("Start  server 'labirint'")
 
@@ -105,7 +103,7 @@ def get_robot_position():
             for pos in ser_list:
                 try:
                     resp = pos[0]()
-                    rospy.loginfo("%s telemetry x=%s,y=%s", pos[1], resp.x, resp.y)
+                    rospy.loginfo("%s telemetry x=%s,y=%s", pos[1], resp.j, resp.i)
                 except rospy.ServiceException as e:
                     rospy.loginfo("Service call failed: %s" % e)
                     rospy.sleep(1)
@@ -115,14 +113,16 @@ def get_robot_position():
 def omega():
     rospy.init_node('omega')
     rospy.loginfo("Start 'omega' node")
+    print(labirint)
+    rospy.sleep(1)
     init_servers()
     get_robot_position()
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='station server')
-    parser.add_argument('--visual',  type=bool,  default=False,
-                        help='True - massive output')
+    parser.add_argument('-v',  type=bool,  default=False,
+                        help='V = True => massive output')
     args = parser.parse_args()
-    visual = args.visual
+    visual = args.v
     omega()

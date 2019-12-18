@@ -8,40 +8,40 @@ from cybermans_psu.srv import PositionWant
 from cybermans_psu.srv import PositionWhere, PositionWhereResponse
 from cybermans_psu.srv import PositionAround
 
-x, y = 0, 0
+i, j = 0, 0
 
 
 def handle_where(req):
-    return PositionWhereResponse(x, y)
+    return PositionWhereResponse(i, j)
 
 
 def change_rnd_pos(pos_want, pos_around):
-    around = pos_around(x, y)
+    around = pos_around(i, j)
     if around.w != 0 and around.a != 0 and around.s != 0 and around.d != 0:
-        return x, y
+        return i, j
     else:
         flag = True
-        xx, yy = x, y
+        ii, jj = i, j
         while flag:
             way = np.random.choice(['w', 'a', 's', 'd'])
             if way == 'w' and around.w == 0:
-                xx = x - 1
+                ii = i - 1
                 flag = False
             elif way == 'a' and around.a == 0:
-                yy = y - 1
+                jj = j - 1
                 flag = False
             elif way == 's' and around.s == 0:
-                xx = x + 1
+                ii = i + 1
                 flag = False
             elif way == 'd' and around.d == 0:
-                yy = y + 1
+                jj = j + 1
                 flag = False
-        # print(xx, yy)
+        # print(ii, jj)
 
-        if pos_want(x, y, xx, yy).res:
-            return xx, yy
+        if pos_want(i, j, ii, jj).res:
+            return ii, jj
         else:
-            return x, y
+            return i, j
 
 
 def server(server_name):
@@ -56,10 +56,10 @@ def server(server_name):
             rospy.loginfo("Wait server 'labirint_rnd_pos'")
             rospy.wait_for_service('labirint_rnd_pos')
             get_rnd_pos = rospy.ServiceProxy('labirint_rnd_pos', PositionWhere)
-            global x, y
+            global i, j
             rnd_pos = get_rnd_pos()
-            x = rnd_pos.x
-            y = rnd_pos.y
+            i = rnd_pos.i
+            j = rnd_pos.j
 
             rospy.loginfo("Wait server 'labirint'")
             rospy.wait_for_service('labirint')
@@ -74,14 +74,16 @@ def server(server_name):
                 rospy.loginfo("Start server '" + server_name + "'")
 
             while not rospy.is_shutdown():
-                x, y = change_rnd_pos(pos_want, pos_around)
-                rospy.loginfo("%s x=%s,y=%s", server_name, x, y)
+                i, j = change_rnd_pos(pos_want, pos_around)
+                rospy.loginfo("%s x=%s,y=%s", server_name, j, i)
                 r.sleep()
             flag = False
         except rospy.ServiceException as e:
             rospy.loginfo("Service call failed: %s" % e)
             # s.shutdown('shutdown ' + server_name)
             rospy.sleep(1)
+        except rospy.exceptions.ROSInterruptException:  # ^C
+            flag = False
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
-int64  x_old
-int64  y_old
-int64  x_new
-int64  y_new
+int64  i_old
+int64  j_old
+int64  i_new
+int64  j_new
 ---
 bool   res

@@ -1,5 +1,5 @@
-int64  x
-int64  y
+int64  i
+int64  j
 ---
 int64   w
 int64   a
